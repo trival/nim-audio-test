@@ -1,197 +1,147 @@
-# import { ElemNode } from '@elemaudio/core'
-# import { timedTrigger } from './elemaudio'
-# import { rotate } from './base'
+import elemaudio 
 
-# export interface MelodyNote<T> {
-# 	duration: number
-# 	data: T | null
-# }
+type 
+  MelodyNote*[T] = tuple
+    duration: float = 0.0
+    data: T 
 
-# export type Melody<T> = MelodyNote<T>[]
+  Melody*[T] = seq[MelodyNote[T]]
 
-# export interface SeqNote<T> {
-# 	start: number
-# 	duration: number
-# 	data: T
-# }
+  SeqNote*[T] = object
+    start: float = 0.0
+    duration: float = 0.0
+    data: T
 
-# export interface Sequence<T> {
-# 	notes: SeqNote<T>[]
-# 	duration: number
-# }
+  Sequence*[T] = object
+    notes: seq[SeqNote[T]]
+    duration: float = 0.0
 
-# export function melodyNote<T>(duration: number, data: T | null = null) {
-# 	return {
-# 		duration,
-# 		data,
-# 	}
-# }
+func melodyToSeq*[T](melody: Melody[T]) : Sequence[T] =
+  for note in melody:
+    if note.data != nil:
+      let n = SeqNote[T](
+        start = result.duration,
+        duration = note.duration,
+        data = note.data
+      )
+      result.notes.add(n)
+    result.duration += note.duration
 
-# export function melodyToSeq<T>(melody: Melody<T>): Sequence<T> {
-# 	const notes: SeqNote<T>[] = []
-# 	let duration = 0
+func `&`*[T](s1: Sequence[T], s2: Sequence[T]): Sequence[T] =
+  result.duration = s1.duration + s2.duration
+  result.notes = s1.notes & s2.notes
 
-# 	melody.forEach((note) => {
-# 		if (note.data != null) {
-# 			notes.push({
-# 				start: duration,
-# 				duration: note.duration,
-# 				data: note.data,
-# 			})
-# 		}
-# 		duration += note.duration
-# 	})
+# Sequencer
 
-# 	return {
-# 		notes,
-# 		duration,
-# 	}
-# }
+type
+  PlayableNote*[T] = object
+    data: T
+    idx: int
+    triggerSignal: elemaudio.AudioNode
 
-# export function combine<T>(...seqs: Sequence<T>[]): Sequence<T> {
-# 	const notes: SeqNote<T>[] = []
-# 	let duration = 0
+  Sequencer[T] = object
+    sequence: Sequence[T]
+    initData: T
 
-# 	seqs.forEach((seq) => {
-# 		seq.notes.forEach((note) => {
-# 			notes.push({
-# 				start: duration + note.start,
-# 				duration: note.duration,
-# 				data: note.data,
-# 			})
-# 		})
-# 		duration += seq.duration
-# 	})
+    trackCount: int
+    bpm: float
+    repetitions: int
+    startTime: float
+    seqKey: string
+    debug: bool
 
-# 	return {
-# 		notes,
-# 		duration,
-# 	}
-# }
+    secPerBeat: float 
+    seqDuration: float
+    noteIntervals: seq[tuple[start: float, finish: float]]
+    tracks: seq[PlayableNote[T]]
+    playingNotes: seq[bool]
 
-# export interface PlayableNote<T> {
-# 	data: T
-# 	idx: number
-# 	triggerSignal: ElemNode
-# }
+    currentTrackIdx = 0
 
-# interface SequenceProps<T> {
-# 	initData: T
-# 	trackCount: number
-# 	bpm: number
-# 	repetitions: number
-# 	startTime: number
-# 	seqTriggerKey: string
-# 	debug?: boolean
-# }
+func createSequencer*[T](
+  s: Sequence[T],
+  initData: T,
+  trackCount: int = 2,
+  bpm: float = 120.0,
+  repetitions: int = 0,
+  startTime: float = 0.0,
+  seqKey: string = "seq_trigger",
+  debug: bool = false
+): Sequencer[T] =
+  result.sequence = s
+  result.initData = initData
+  result.trackCount = trackCount
+  result.bpm = bpm
+  result.repetitions = repetitions
+  result.startTime = startTime
+  result.seqKey = seqKey
+  result.debug = debug
 
-# const defaultSequenceProps: Omit<SequenceProps<any>, 'initData'> = {
-# 	bpm: 120,
-# 	repetitions: 0,
-# 	startTime: 0,
-# 	seqTriggerKey: 'trigger',
-# 	trackCount: 2,
-# }
+  let secPerBeat = 60.0 / bpm
+  result.secPerBeat = secPerBeat
 
-# export function createSequencer<T>(
-# 	seq: Sequence<T>,
-# 	props: Partial<SequenceProps<T>> & { initData: T },
-# ): (currentTime: number) => PlayableNote<T>[] {
-# 	const {
-# 		bpm,
-# 		repetitions,
-# 		startTime,
-# 		seqTriggerKey,
-# 		trackCount,
-# 		initData,
-# 		debug,
-# 	} = {
-# 		...defaultSequenceProps,
-# 		...props,
-# 	}
-# 	const secPerBeat = 60 / bpm
+  let seqDuration = seq.duration * secPerBeat
+  result.seqDuration = seqDuration
 
-# 	let noteIntervals: { start: number; end: number; idx: number }[] = []
-# 	seq.notes.forEach((note, i) => {
-# 		const start = note.start * secPerBeat
-# 		if (note.data != null) {
-# 			noteIntervals.push({
-# 				start: start,
-# 				end: start + note.duration * secPerBeat,
-# 				idx: i,
-# 			})
-# 		}
-# 	})
+  let noteIntervals: seq[tuple[start: float, finish: float]] = @[]
 
-# 	const seqDuration = seq.duration * secPerBeat
+  for i, note in seq.notes:
+    let start = note.start * secPerBeat - seqDuration
+    let finish = start + note.duration * secPerBeat
+    if finish > 0: 
+      noteIntervals.add((start, finish))
 
-# 	noteIntervals = noteIntervals
-# 		.map((n) => ({
-# 			...n,
-# 			start: n.start - seqDuration,
-# 			end: n.end - seqDuration,
-# 		}))
-# 		.concat(noteIntervals)
-# 		.filter((n) => n.end > 0)
+  let playingNotes: seq[bool] = @[]
 
-# 	const tracks: PlayableNote<T>[] = Array.from(
-# 		{ length: trackCount },
-# 		(_, i) => ({
-# 			idx: i,
-# 			data: initData,
-# 			triggerSignal: timedTrigger(0, 0, seqTriggerKey + i),
-# 		}),
-# 	)
+  for i, note in seq.notes:
+    let start = note.start * secPerBeat 
+    let finish = start + note.duration * secPerBeat
+    noteIntervals.add((start, finish))
+    playingNotes.add(false)
 
-# 	let currentTrackIdx = 0
+  result.noteIntervals = noteIntervals
+  result.playingNotes = playingNotes
 
-# 	const getNextTrackIdx = () => {
-# 		const idx = currentTrackIdx
-# 		currentTrackIdx = (currentTrackIdx + 1) % trackCount
-# 		return idx
-# 	}
+  let tracks: seq[PlayableNote[T]] = @[]
 
-# 	const playingNotes: { [idx: number]: boolean } = {}
+  for i in 0..<trackCount:
+    tracks.add(PlayableNote[T](
+      data = initData,
+      idx = i,
+      triggerSignal = timedTrigger(0, 0, seqKey & $i)
+    ))
 
-# 	return (currentTime: number) => {
-# 		const currentLoop = Math.floor((currentTime - startTime) / seqDuration)
+  result.tracks = tracks
 
-# 		if (repetitions === 0 || currentLoop < repetitions) {
-# 			const seqTime = currentTime - currentLoop * seqDuration
+func getNextTrackIdx*[T](s: Sequencer[T]): int =
+  let idx = s.currentTrackIdx
+  s.currentTrackIdx = (s.currentTrackIdx + 1) mod s.trackCount
+  result = idx
 
-# 			noteIntervals.forEach((n) => {
-# 				if (n.start - 0.1 <= seqTime && n.end > seqTime) {
-# 					if (!playingNotes[n.idx]) {
-# 						const note = seq.notes[n.idx]
-# 						const start = n.start + currentLoop * seqDuration
-# 						const nextTrackIdx = getNextTrackIdx()
-# 						tracks[nextTrackIdx].data = note.data!
-# 						tracks[nextTrackIdx].triggerSignal = timedTrigger(
-# 							start,
-# 							start + note.duration * secPerBeat,
-# 							seqTriggerKey + nextTrackIdx,
-# 						)
-# 						playingNotes[n.idx] = true
-# 						console.log('adding seq note', seqTriggerKey, n.idx, nextTrackIdx)
-# 					}
-# 				} else {
-# 					playingNotes[n.idx] = false
-# 				}
-# 			})
+func currentNotes*[T](s: Sequencer[T], currentTime: float): seq[PlayableNote[T]] =
+  let currentLoop = (currentTime - s.startTime) div s.seqDuration
 
-# 			debug &&
-# 				console.log(
-# 					seqTriggerKey,
-# 					Object.entries(playingNotes)
-# 						.filter(([_, v]) => v)
-# 						.map(([k]) => k),
-# 				)
-# 		}
+  if s.repetitions == 0 or currentLoop < s.repetitions:
+    let seqTime = currentTime - currentLoop * s.seqDuration
 
-# 		return tracks
-# 	}
-# }
+    for i, n in s.noteIntervals:
+      if n.start - 0.1 <= seqTime and n.finish > seqTime:
+        if not s.playingNotes[i]:
+          let note = s.sequence.notes[i]
+          let start = n.start + currentLoop * s.seqDuration
+          let nextTrackIdx = getNextTrackIdx(s)
+          s.tracks[nextTrackIdx].data = note.data
+          s.tracks[nextTrackIdx].triggerSignal = elemaudio.timedTrigger(
+            start,
+            start + note.duration * s.secPerBeat,
+            s.seqKey & $nextTrackIdx
+          )
+          s.playingNotes[i] = true
 
-type MelodyNote[T] = object
-  duration: float
-  data: T 
+    if s.debug:
+      let playing: seq[int] = @[]
+      for i, v in s.playingNotes:
+        if v: playing.add($i)
+      echo s.seqKey, playing
+
+  s.tracks

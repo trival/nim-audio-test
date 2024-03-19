@@ -1,4 +1,4 @@
-import lib/elemAudio
+import lib/elemaudio
 
 let c = (cycle(440) + cycle(441)) / 2$"divisor"
 
