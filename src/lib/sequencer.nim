@@ -137,15 +137,19 @@ proc currentNotes*[T](s: var Sequencer[T], currentTime: float): seq[PlayableNote
           s.tracks[nextTrackIdx].data = note.data
           s.tracks[nextTrackIdx].triggerSignal = elemaudio.timedTrigger(
             start,
-            start + note.duration * s.secPerBeat,
+            note.duration * s.secPerBeat,
             s.seqKey & $nextTrackIdx
           )
           s.playingNotes[i] = true
+      else: 
+        if s.playingNotes[i]:
+          s.playingNotes[i] = false
+      
 
     if s.debug:
       var playing: seq[int] = @[]
       for i, v in s.playingNotes:
         if v: playing.add(i)
-      echo s.seqKey, playing
+      echo s.seqKey, " ", s.currentTrackIdx, " ", playing
 
   s.tracks

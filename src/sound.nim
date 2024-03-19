@@ -4,26 +4,32 @@ import lib/sequencer
 
 const null = 0.0
 
-proc n (midi: int, duration: float): MelodyNote[float] = 
-  (duration, midi.toFrequency)
+var melody: Melody[float] = @[]
 
-proc b (duration: float): MelodyNote[float] = 
- (duration, null)
+proc note (midi: int, duration: float): void = 
+  melody.add((duration, midi.toFrequency))
 
-proc m (): Melody[float] = 
-  for midi in (C, 4).chord(d7):
-    result.add(n(midi, 0.5))
+proc brk (duration: float): void = 
+  melody.add((duration, null))
 
-  result.add(b(1.0))
+# setup melody 
 
-  for midi in (F, 3).chord(maj7).revert:
-    result.add(n(midi, 0.5))
+for midi in (C, 4).chord(d7):
+  note(midi, 0.5)
 
-  result.add(b(1.0))
+1.0.brk
 
-var s = createSequencer(m().toSequence(null), null, bpm = 80.0)
+for midi in (F, 3).chord(maj7).revert:
+  note(midi, 0.5)
 
-proc play(time: float): array[2, AudioNode] = 
+1.0.brk
+
+# setup sequencer
+
+var s = createSequencer(melody.toSequence(null), null,
+  bpm = 80.0, debug = true)
+
+proc render(time: float): array[2, AudioNode] = 
   let notes = s.currentNotes(time)
 
   let n1 = notes[0]
@@ -40,5 +46,5 @@ proc play(time: float): array[2, AudioNode] =
 
   [c, c]
 
-{. emit: "export {`play` as synth}" .}
+{. emit: "export {`render` as render}" .}
 

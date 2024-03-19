@@ -1,5 +1,5 @@
 import WebRenderer from "@elemaudio/web-renderer"
-import { synth } from "./sound"
+import { render } from "./sound"
 
 const ctx = new AudioContext()
 const core = new WebRenderer()
@@ -16,7 +16,7 @@ function play() {
 	btn.textContent = playing ? "Stop" : "Start"
 	setInterval(() => {
 		if (playing) {
-			core.render(...synth(ctx.currentTime))
+			core.render(...render(ctx.currentTime))
 		} else {
 			core.render(0, 0)
 		}
