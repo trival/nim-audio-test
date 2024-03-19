@@ -1,4 +1,5 @@
 import elemaudio 
+import math
 
 type 
   MelodyNote*[T] = tuple
@@ -16,13 +17,13 @@ type
     notes: seq[SeqNote[T]]
     duration: float = 0.0
 
-func melodyToSeq*[T](melody: Melody[T]) : Sequence[T] =
+func toSequence*[T](melody: Melody[T], null: T) : Sequence[T] =
   for note in melody:
-    if note.data != nil:
+    if note.data != null:
       let n = SeqNote[T](
-        start = result.duration,
-        duration = note.duration,
-        data = note.data
+        start: result.duration,
+        duration: note.duration,
+        data: note.data
       )
       result.notes.add(n)
     result.duration += note.duration
@@ -35,9 +36,13 @@ func `&`*[T](s1: Sequence[T], s2: Sequence[T]): Sequence[T] =
 
 type
   PlayableNote*[T] = object
-    data: T
-    idx: int
-    triggerSignal: elemaudio.AudioNode
+    data*: T
+    idx*: int
+    triggerSignal*: elemaudio.AudioNode
+
+  Period = tuple 
+    start: float
+    finish: float
 
   Sequencer[T] = object
     sequence: Sequence[T]
@@ -52,7 +57,7 @@ type
 
     secPerBeat: float 
     seqDuration: float
-    noteIntervals: seq[tuple[start: float, finish: float]]
+    noteIntervals: seq[Period]
     tracks: seq[PlayableNote[T]]
     playingNotes: seq[bool]
 
@@ -80,20 +85,20 @@ func createSequencer*[T](
   let secPerBeat = 60.0 / bpm
   result.secPerBeat = secPerBeat
 
-  let seqDuration = seq.duration * secPerBeat
+  let seqDuration = s.duration * secPerBeat
   result.seqDuration = seqDuration
 
-  let noteIntervals: seq[tuple[start: float, finish: float]] = @[]
+  var noteIntervals: seq[Period] = @[]
 
-  for i, note in seq.notes:
+  for i, note in s.notes:
     let start = note.start * secPerBeat - seqDuration
     let finish = start + note.duration * secPerBeat
-    if finish > 0: 
+    if finish > 0.0: 
       noteIntervals.add((start, finish))
 
-  let playingNotes: seq[bool] = @[]
+  var playingNotes: seq[bool] = @[]
 
-  for i, note in seq.notes:
+  for i, note in s.notes:
     let start = note.start * secPerBeat 
     let finish = start + note.duration * secPerBeat
     noteIntervals.add((start, finish))
@@ -102,26 +107,25 @@ func createSequencer*[T](
   result.noteIntervals = noteIntervals
   result.playingNotes = playingNotes
 
-  let tracks: seq[PlayableNote[T]] = @[]
+  var tracks: seq[PlayableNote[T]] = @[]
 
   for i in 0..<trackCount:
     tracks.add(PlayableNote[T](
-      data = initData,
-      idx = i,
-      triggerSignal = timedTrigger(0, 0, seqKey & $i)
+      data: initData,
+      idx: i,
+      triggerSignal: timedTrigger(0, 0, seqKey & $i)
     ))
 
   result.tracks = tracks
 
-func getNextTrackIdx*[T](s: Sequencer[T]): int =
-  let idx = s.currentTrackIdx
+func getNextTrackIdx*[T](s: var Sequencer[T]): int =
+  result = s.currentTrackIdx
   s.currentTrackIdx = (s.currentTrackIdx + 1) mod s.trackCount
-  result = idx
 
-func currentNotes*[T](s: Sequencer[T], currentTime: float): seq[PlayableNote[T]] =
-  let currentLoop = (currentTime - s.startTime) div s.seqDuration
+proc currentNotes*[T](s: var Sequencer[T], currentTime: float): seq[PlayableNote[T]] =
+  let currentLoop = floor((currentTime - s.startTime) / s.seqDuration)
 
-  if s.repetitions == 0 or currentLoop < s.repetitions:
+  if s.repetitions == 0 or currentLoop.toInt < s.repetitions:
     let seqTime = currentTime - currentLoop * s.seqDuration
 
     for i, n in s.noteIntervals:
@@ -129,7 +133,7 @@ func currentNotes*[T](s: Sequencer[T], currentTime: float): seq[PlayableNote[T]]
         if not s.playingNotes[i]:
           let note = s.sequence.notes[i]
           let start = n.start + currentLoop * s.seqDuration
-          let nextTrackIdx = getNextTrackIdx(s)
+          let nextTrackIdx = s.getNextTrackIdx
           s.tracks[nextTrackIdx].data = note.data
           s.tracks[nextTrackIdx].triggerSignal = elemaudio.timedTrigger(
             start,
@@ -139,9 +143,9 @@ func currentNotes*[T](s: Sequencer[T], currentTime: float): seq[PlayableNote[T]]
           s.playingNotes[i] = true
 
     if s.debug:
-      let playing: seq[int] = @[]
+      var playing: seq[int] = @[]
       for i, v in s.playingNotes:
-        if v: playing.add($i)
+        if v: playing.add(i)
       echo s.seqKey, playing
 
   s.tracks

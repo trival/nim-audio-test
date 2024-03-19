@@ -1,3 +1,3 @@
 import { ElemNode } from "@elemaudio/core"
 
-export const channels: [ElemNode, ElemNode]
+export const synth: (t: number) => [ElemNode, ElemNode]
