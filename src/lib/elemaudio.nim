@@ -37,8 +37,8 @@ func `/`* (a: AudioNode, b: AudioNode ): AudioNode {. importjs: "el.div(@)" .}
 func `/`* (a: AudioNode, b: float ): AudioNode {. importjs: "el.div(@)" .}
 func `/`* (a: float, b: AudioNode ): AudioNode {. importjs: "el.div(@)" .}
 func `<`* (a: AudioNode, b: AudioNode ): AudioNode {. importjs: "el.le(@)" .}
-func `<`* (a: float, b: AudioNode ): AudioNode {. importjs: "el.le(@)" .}
 func `<`* (a: AudioNode, b: float ): AudioNode {. importjs: "el.le(@)" .}
+func `<`* (a: float, b: AudioNode ): AudioNode {. importjs: "el.le(@)" .}
 func `>`* (a: AudioNode, b: AudioNode ): AudioNode {. importjs: "el.ge(@)" .}
 func `>`* (a: AudioNode, b: float ): AudioNode {. importjs: "el.ge(@)" .}
 func `>`* (a: float, b: AudioNode ): AudioNode {. importjs: "el.ge(@)" .}

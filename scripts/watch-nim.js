@@ -1,5 +1,4 @@
 import { watch } from "fs/promises"
-import { $ } from "bun"
 import * as childProcess from "child_process"
 
 const watcher = watch(process.cwd(), { recursive: true })

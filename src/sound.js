@@ -94,7 +94,7 @@ NTI687865860.node = NNI687865860;
 NTI687865859.base = NTI687865860;
 var NNI553648260 = {kind: 2, len: 3, offset: 0, typ: null, name: null, sons: [{kind: 1, offset: "data", len: 0, typ: NTI33554445, name: "data", sons: null}, 
 {kind: 1, offset: "idx", len: 0, typ: NTI33554435, name: "idx", sons: null}, 
-{kind: 1, offset: "triggerSignal", len: 0, typ: NTI687865859, name: "triggerSignal", sons: null}]};
+{kind: 1, offset: "gate", len: 0, typ: NTI687865859, name: "gate", sons: null}]};
 NTI553648260.node = NNI553648260;
 NTI553648331.base = NTI553648260;
 var NNI134217742 = {kind: 2, len: 0, offset: 0, typ: null, name: null, sons: []};
@@ -991,7 +991,7 @@ function createSequencer_553648278(s_553648280, initData_553648281, trackCount_5
           Label9: while (true) {
           if (!(i_553648951 < trackCount_553648282)) break Label9;
             i_553648396 = i_553648951;
-            tracks_553648391.push({data: initData_553648281, idx: i_553648396, triggerSignal: timedTrigger_687865957(0.0, 0.0, (seqKey_553648286 || []).concat(HEX24_385875976(i_553648396) || []))});;
+            tracks_553648391.push({data: initData_553648281, idx: i_553648396, gate: timedTrigger_687865957(0.0, 0.0, (seqKey_553648286 || []).concat(HEX24_385875976(i_553648396) || []))});;
             i_553648951 = addInt(i_553648951, 1);
           }
       };
@@ -1145,7 +1145,7 @@ function currentNotes_553648511(s_553648513, currentTime_553648514) {
             var start_553648563 = (n_553648561.Field0 + (currentLoop_553648516 * s_553648513.seqDuration));
             var nextTrackIdx_553648590 = getNextTrackIdx_553648586(s_553648513);
             s_553648513.tracks[chckIndx(nextTrackIdx_553648590, 0, (s_553648513.tracks).length - 1)].data = note_553648562.data;
-            s_553648513.tracks[chckIndx(nextTrackIdx_553648590, 0, (s_553648513.tracks).length - 1)].triggerSignal = timedTrigger_687865957(start_553648563, (note_553648562.duration * s_553648513.secPerBeat), (s_553648513.seqKey || []).concat(HEX24_385875976(nextTrackIdx_553648590) || []));
+            s_553648513.tracks[chckIndx(nextTrackIdx_553648590, 0, (s_553648513.tracks).length - 1)].gate = timedTrigger_687865957(start_553648563, (note_553648562.duration * s_553648513.secPerBeat), (s_553648513.seqKey || []).concat(HEX24_385875976(nextTrackIdx_553648590) || []));
             s_553648513.playingNotes[chckIndx(i_553648560, 0, (s_553648513.playingNotes).length - 1)] = true;
             }
             
@@ -1257,7 +1257,7 @@ function HEX24_553648770(x_553648772) {
     result_553648773[0].push.apply(result_553648773[0], [44,32]);;
     }
     
-    result_553648773[0].push.apply(result_553648773[0], [116,114,105,103,103,101,114,83,105,103,110,97,108]);;
+    result_553648773[0].push.apply(result_553648773[0], [103,97,116,101]);;
     result_553648773[0].push.apply(result_553648773[0], [58,32]);;
     countHEX60gensym18_553648784 += 1;
     result_553648773[0].push.apply(result_553648773[0], [46,46,46]);;
@@ -1275,7 +1275,7 @@ function render_553648486(time_553648487) {
     var n2_553648709 = nimCopy(null, notes_553648707[chckIndx(1, 0, (notes_553648707).length - 1)], NTI553648260);
     rawEcho(HEX24_553648770(n1_553648708));
     rawEcho(HEX24_553648770(n2_553648709));
-    var c_553648836 = el.add(el.mul(el.triangle(el.const({value: n1_553648708.data, key: "1"})), n1_553648708.triggerSignal), el.mul(el.triangle(el.const({value: n2_553648709.data, key: "2"})), n2_553648709.triggerSignal));
+    var c_553648836 = el.add(el.mul(el.triangle(el.const({value: n1_553648708.data, key: "1"})), n1_553648708.gate), el.mul(el.triangle(el.const({value: n2_553648709.data, key: "2"})), n2_553648709.gate));
     result_553648488 = nimCopy(result_553648488, [c_553648836, c_553648836], NTI553648404);
 
   return result_553648488;

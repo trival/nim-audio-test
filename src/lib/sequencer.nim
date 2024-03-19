@@ -38,7 +38,7 @@ type
   PlayableNote*[T] = object
     data*: T
     idx*: int
-    triggerSignal*: elemaudio.AudioNode
+    gate*: elemaudio.AudioNode
 
   Period = tuple 
     start: float
@@ -113,7 +113,7 @@ func createSequencer*[T](
     tracks.add(PlayableNote[T](
       data: initData,
       idx: i,
-      triggerSignal: timedTrigger(0, 0, seqKey & $i)
+      gate: timedTrigger(0, 0, seqKey & $i)
     ))
 
   result.tracks = tracks
@@ -135,7 +135,7 @@ proc currentNotes*[T](s: var Sequencer[T], currentTime: float): seq[PlayableNote
           let start = n.start + currentLoop * s.seqDuration
           let nextTrackIdx = s.getNextTrackIdx
           s.tracks[nextTrackIdx].data = note.data
-          s.tracks[nextTrackIdx].triggerSignal = elemaudio.timedTrigger(
+          s.tracks[nextTrackIdx].gate = elemaudio.timedTrigger(
             start,
             note.duration * s.secPerBeat,
             s.seqKey & $nextTrackIdx

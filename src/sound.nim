@@ -41,15 +41,12 @@ proc render(time: float): array[2, AudioNode] =
   let n1 = notes[0]
   let n2 = notes[1]
 
-  # let phaseLFO = (cycle(0.5).fit1101 + 0.1) * 3.0 
-  # let c = triangle((C, 4).toFrequency) * (phasor(phaseLFO) > 0.5) 
-
-  echo n1
-  echo n2
+  # echo n1
+  # echo n2
 
   let c = 
-    triangle(n1.data@"1") * n1.triggerSignal +
-    triangle(n2.data@"2") * n2.triggerSignal
+    triangle(n1.data@"1") * n1.gate +
+    triangle(n2.data@"2") * n2.gate
 
   [c, c]
 
