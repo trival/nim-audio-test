@@ -73,7 +73,7 @@ func invert* (chord: seq[int], times = 1): seq[int] =
     for i in 1..times:
       result = result.invertUp
 
-func revert* (chord: seq[int]): seq[int] =
+func reverse* (chord: seq[int]): seq[int] =
   var i = chord.high
   while i >= chord.low:
     result.add(chord[i])
