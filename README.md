@@ -5,5 +5,5 @@ entry point is `src/sound.nim`
 compile it with
 
 ```console
-nim js -d:release src/sound.nim
+nim js -d:danger src/sound.nim
 ```
